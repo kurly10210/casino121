@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎰 Casino Lobby</title>
+    <style>
+        :root { --orange: #ff4400; --gold: #ff8800; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0f1e 0%, #0a1a2e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        /* ─── Header ─── */
+        .header {
+            background: #121a2a;
+            border-bottom: 1px solid #1e3050;
+            padding: 12px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .header .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #f3c623;
+        }
+        .header .user-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .header .balance-card {
+            background: #0f212e;
+            padding: 8px 18px;
+            border-radius: 30px;
+            border: 1px solid #f3c62333;
+        }
+        .header .balance-card .amount {
+            color: #f3c623;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        .header input {
+            padding: 8px 14px;
+            border-radius: 20px;
+            border: 1px solid #2c3e44;
+            background: #1a2735;
+            color: #fff;
+            width: 120px;
+        }
+        .header button {
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-login { background: #f3c623; color: #121a2a; }
+        .btn-login:hover { background: #ffda44; }
+        .btn-register { background: #2c3e44; color: #f3c623; border: 1px solid #f3c623; }
+        .btn-logout { background: #555; color: #fff; }
+        .btn-logout:hover { background: #777; }
+
+        /* ─── Content ─── */
+        .content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 25px 20px;
+        }
+        .section-title {
+            font-size: 1.2rem;
+            color: #f3c623;
+            margin: 25px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #1e3050;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-title .badge {
+            background: #e67e22;
+            color: #fff;
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: normal;
+        }
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 18px;
+        }
+        .game-card {
+            background: #121a2a;
+            border: 1px solid #1e3050;
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+            text-align: center;
+        }
+        .game-card:hover {
+            transform: translateY(-4px);
+            border-color: #f3c623;
+            box-shadow: 0 8px 25px rgba(243,198,35,0.15);
+        }
+        .game-card .thumb {
+            height: 140px;
+            background: linear-gradient(135deg, #1a2735, #0f212e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            position: relative;
+        }
+        .game-card .thumb .provider-tag {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #f3c623;
+            color: #121a2a;
+            font-size: 0.6rem;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 8px;
+        }
+        .game-card .thumb .provider-tag.nolimit {
+            background: #e67e22;
+            color: #fff;
+        }
+        .game-card .info {
+            padding: 12px 10px;
+        }
+        .game-card .info .name {
+            font-weight: bold;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+        .game-card .info .meta {
+            font-size: 0.75rem;
+            color: #8899aa;
+        }
+        .game-card .info .rtp {
+            color: #4caf50;
+            font-weight: bold;
+            font-size: 0.75rem;
+        }
+        /* ─── Banner ─── */
+        .banner {
+            background: linear-gradient(135deg, #1a1040, #0a1a2e);
+            border: 1px solid #1e3050;
+            border-radius: 16px;
+            padding: 25px 30px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .banner .banner-icon {
+            font-size: 3rem;
+        }
+        .banner .banner-text h2 {
+            color: #f3c623;
+            margin-bottom: 5px;
+        }
+        .banner .banner-text p {
+            color: #8899aa;
+            font-size: 0.9rem;
+        }
+        /* Ticker */
+        .ticker {
+            background: #0a0015;
+            border: 1px solid #30a;
+            border-radius: 10px;
+            padding: 8px 14px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            white-space: nowrap;
+            color: #88f;
+            font-size: 0.8rem;
+        }
+        .ticker span { margin-right: 40px; }
+        .ticker .gold { color: #ffcc00; }
+        /* Daily bonus bar */
+        .daily-bar {
+            background: linear-gradient(90deg, #1a1000, #2a1a00, #1a1000);
+            border: 1px solid var(--orange);
+            border-radius: 10px;
+            padding: 10px 16px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .daily-bar .streak { color: var(--gold); font-weight: bold; }
+        .daily-bar button {
+            background: var(--orange);
+            border: none;
+            color: #fff;
+            padding: 8px 18px;
+            border-radius: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .daily-bar button:disabled { opacity: 0.4; cursor: not-allowed; }
+        /* Voucher bar */
+        .voucher-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        .voucher-bar input {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 16px;
+            border: 1px solid #333;
+            background: #1a2735;
+            color: #fff;
+            font-size: 0.85rem;
+        }
+        .voucher-bar button {
+            background: #2a0a30;
+            color: #c8f;
+            border: 1px solid #a0f;
+            padding: 8px 16px;
+            border-radius: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        /* Leaderboard */
+        .leaderboard {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 20px;
+        }
+        .leaderboard h4 { color: var(--gold); margin-bottom: 8px; font-size: 0.85rem; }
+        .leaderboard table { width: 100%; font-size: 0.75rem; border-collapse: collapse; }
+        .leaderboard td { padding: 4px 8px; border-bottom: 1px solid #1a1a1a; }
+        .leaderboard .rank { color: var(--gold); font-weight: bold; width: 24px; }
+        .leaderboard .won { color: #4caf50; text-align: right; }
+        .welcome-msg {
+            color: #f3c623;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+        /* ─── Footer ─── */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #556;
+            font-size: 0.75rem;
+            border-top: 1px solid #1e3050;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <!-- ─── HEADER ─── -->
+    <div class="header">
+        <div class="logo">🎰 CASINO LOBBY</div>
+        <div class="user-area">
+            <div id="balanceArea" style="display:none;" class="balance-card">
+                💰 <span class="amount" id="balance">$0.00</span>
+                &nbsp;🎁 <span class="amount" id="bonusBalance">$0.00</span>
+            </div>
+            <div id="loginArea">
+                <input type="text" id="username" placeholder="Username" value="TestPlayer">
+                <input type="password" id="password" placeholder="Password" value="test123">
+                <button class="btn-login" id="loginBtn">Login</button>
+                <button class="btn-register" id="registerBtn">Register</button>
+            </div>
+            <div id="userArea" style="display:none;">
+                <span id="welcomeUser" class="welcome-msg"></span>
+                <button class="btn-logout" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── CONTENT ─── -->
+    <div class="content">
+        <!-- Welcome Banner -->
+        <div class="banner" id="banner">
+            <div class="banner-icon">🎲</div>
+            <div class="banner-text">
+                <h2>Welcome to the Casino</h2>
+                <p>Play classic slots or try premium games from Nolimit City. Login to play for real money.</p>
+            </div>
+        </div>
+
+        <!-- Big Wins Ticker -->
+        <div class="ticker" id="ticker">
+            🏆 Recent wins: <span id="tickerContent">Loading...</span>
+        </div>
+
+        <!-- Daily Bonus + Voucher -->
+        <div class="daily-bar" id="dailyBar" style="display:none;">
+            <span>📅 Daily Bonus: <span class="streak" id="dailyStreak">Day 1</span></span>
+            <button id="dailyBtn" onclick="claimDaily()">🎁 CLAIM BONUS</button>
+        </div>
+        <div class="voucher-bar" id="voucherBar" style="display:none;">
+            <input type="text" id="voucherCode" placeholder="Enter voucher code...">
+            <button onclick="redeemVoucher()">🎫 REDEEM</button>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="leaderboard" id="leaderboard">
+            <h4>🏆 Top Winners</h4>
+            <table id="leaderTable"><tr><td colspan="3">Loading...</td></tr></table>
+        </div>
+
+        <!-- ─── ORIGINAL SLOTS ─── -->
+        <div class="section-title">🎰 Classic Slots</div>
+        <div class="games-grid">
+            <div class="game-card" onclick="launchSlot()">
+                <div class="thumb">
+                    🎰
+                    <span class="provider-tag">IN-HOUSE</span>
+                </div>
+                <div class="info">
+                    <div class="name">Slot King</div>
+                    <div class="meta">3-Reel Classic</div>
+                    <div class="rtp">RTP: 96.5%</div>
+                </div>
+            </div>
+            <div class="game-card" onclick="launchRoadRage()">
+                <div class="thumb">
+                    🏎️
+                    <span class="provider-tag">IN-HOUSE</span>
+                </div>
+                <div class="info">
+                    <div class="name">Road Rage</div>
+                    <div class="meta">5-Reel · xNudge Wilds</div>
+                    <div class="rtp">RTP: 96.0%</div>
+                </div>
+            </div>
+            <div class="game-card" onclick="launchCherryMaster()">
+                <div class="thumb">
+                    🍒
+                    <span class="provider-tag">IN-HOUSE</span>
+                </div>
+                <div class="info">
+                    <div class="name">Cherry Master</div>
+                    <div class="meta">8-Liner Fruit Machine</div>
+                    <div class="rtp">RTP: 94.8%</div>
+                </div>
+            </div>
+            <div class="game-card" onclick="launchCherryMame()">
+                <div class="thumb">
+                    🧱🍒
+                    <span class="provider-tag">MAME</span>
+                </div>
+                <div class="info">
+                    <div class="name">Tetris + Cherry Master</div>
+                    <div class="meta">Original ROM · cmtetris</div>
+                    <div class="rtp">Arcade combo board</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── NOLIMIT CITY GAMES ─── -->
+        <div class="section-title">
+            🔥 Nolimit City <span class="badge">PREMIUM</span>
+        </div>
+        <div class="games-grid" id="nolimitGrid">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+
+    <div class="footer">
+        Powered by nolimit.js v1.2.86 — Nolimit City® — Play responsibly. 18+
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let currentUser = null;
+
+        // ─── Nolimit City Game Catalog ───
+        // These are real Nolimit City game identifiers
+        const NOLIMIT_GAMES = [
+            { name: 'Mental',            thumb: '🧠', rtp: '96.08%', volatility: 'Extreme' },
+            { name: 'Deadwood',          thumb: '🤠', rtp: '96.03%', volatility: 'Extreme' },
+            { name: 'San Quentin',       thumb: '🔒', rtp: '96.03%', volatility: 'Extreme' },
+            { name: 'Tombstone',         thumb: '🪦', rtp: '96.18%', volatility: 'Extreme' },
+            { name: 'Fire in the Hole',  thumb: '💣', rtp: '96.06%', volatility: 'Extreme' },
+            { name: 'Das xBoot',         thumb: '🚢', rtp: '96.04%', volatility: 'High' },
+            { name: 'Punk Rocker',       thumb: '🎸', rtp: '96.08%', volatility: 'High' },
+            { name: 'Barbarian Fury',    thumb: '⚔️', rtp: '96.06%', volatility: 'Extreme' },
+            { name: 'East Coast vs West Coast', thumb: '🌆', rtp: '96.04%', volatility: 'High' },
+            { name: 'Folsom Prison',     thumb: '⛓️', rtp: '96.07%', volatility: 'Extreme' },
+            { name: 'Misery Mining',     thumb: '⛏️', rtp: '96.09%', volatility: 'Extreme' },
+            { name: 'Nine to Five',      thumb: '💼', rtp: '96.08%', volatility: 'High' }
+        ];
+
+        // ─── Render Nolimit game cards ───
+        function renderNolimitGames() {
+            const grid = document.getElementById('nolimitGrid');
+            grid.innerHTML = NOLIMIT_GAMES.map(g => `
+                <div class="game-card" onclick="launchNolimit('${g.name}')">
+                    <div class="thumb">
+                        ${g.thumb}
+                        <span class="provider-tag nolimit">NOLIMIT</span>
+                    </div>
+                    <div class="info">
+                        <div class="name">${g.name}</div>
+                        <div class="meta">Volatility: ${g.volatility}</div>
+                        <div class="rtp">RTP: ${g.rtp}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        renderNolimitGames();
+
+        // ─── Launch in-house slot ───
+        function launchSlot() {
+            if (!currentUser) {
+                alert('Please login first to play.');
+                return;
+            }
+            window.location.href = 'index.html';
+        }
+
+        function launchRoadRage() {
+            if (!currentUser) {
+                alert('Please login first to play.');
+                return;
+            }
+            window.location.href = 'road-rage.html?userId=' + currentUser.userId;
+        }
+
+        function launchCherryMaster() {
+            if (!currentUser) {
+                alert('Please login first to play.');
+                return;
+            }
+            window.location.href = 'cherry-master.html?userId=' + currentUser.userId;
+        }
+
+        function launchCherryMame() {
+            if (!currentUser) {
+                alert('Please login first to play.');
+                return;
+            }
+            // Opens the MAME launcher page for cmtetris ROM
+            window.open('mame-launcher.html?rom=cmtetris&userId=' + currentUser.userId, '_blank');
+        }
+
+        // ─── Launch Nolimit game ───
+        function launchNolimit(gameName) {
+            if (!currentUser) {
+                alert('Please login first to play Nolimit City games.');
+                return;
+            }
+            const url = `nolimit-game.html?game=${encodeURIComponent(gameName)}&userId=${currentUser.userId}`;
+            window.location.href = url;
+        }
+
+        // ─── API Helpers ───
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const options = { method, headers: { 'Content-Type': 'application/json' } };
+            if (body) options.body = JSON.stringify(body);
+            const res = await fetch(`${API_BASE}${endpoint}`, options);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Request failed');
+            return data;
+        }
+
+        async function loadBalance() {
+            if (!currentUser) return;
+            try {
+                const data = await apiCall(`/balance/${currentUser.userId}`);
+                const bal = data.Balance !== undefined ? data.Balance : data.balance;
+                const bonus = data.BonusBalance !== undefined ? data.BonusBalance : data.bonusBalance;
+                document.getElementById('balance').textContent = '$' + parseFloat(bal || 0).toFixed(2);
+                document.getElementById('bonusBalance').textContent = '$' + parseFloat(bonus || 0).toFixed(2);
+            } catch (e) {
+                console.error('Balance load error:', e);
+            }
+        }
+
+        // ─── Auth ───
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            try {
+                const data = await apiCall('/login', 'POST', { username, password });
+                currentUser = { userId: data.userId, username: data.username };
+                onLoginSuccess();
+            } catch (err) {
+                alert('Login failed: ' + err.message);
+            }
+        }
+
+        async function register() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            try {
+                await apiCall('/register', 'POST', {
+                    username,
+                    password,
+                    email: `${username}@casino.com`,
+                    dob: '1990-01-01'
+                });
+                alert('Registration successful! You can now login.');
+            } catch (err) {
+                alert('Registration failed: ' + err.message);
+            }
+        }
+
+        // ─── Ticker ───
+        let tickerWins = [];
+        async function loadTicker() {
+            try {
+                const r = await fetch(API_BASE + '/leaderboard');
+                const data = await r.json();
+                if (data.length > 0) tickerWins = data;
+                animateTicker();
+            } catch(e) {}
+        }
+        function animateTicker() {
+            if (tickerWins.length === 0) { $('tickerContent').textContent = 'No wins yet — be the first!'; return; }
+            let i = 0;
+            setInterval(() => {
+                const w = tickerWins[i % tickerWins.length];
+                $('tickerContent').innerHTML = `<span class="gold">${w.Username}</span> won <span class="gold">$${parseFloat(w.totalWon).toFixed(0)}</span> across ${w.totalBets} bets`;
+                i++;
+            }, 4000);
+        }
+        loadTicker();
+
+        // ─── Leaderboard ───
+        async function loadLeaderboard() {
+            try {
+                const r = await fetch(API_BASE + '/leaderboard');
+                const data = await r.json();
+                let html = '';
+                data.forEach((row, idx) => {
+                    const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : (idx + 1);
+                    html += `<tr><td class="rank">${medal}</td><td>${row.Username}</td><td class="won">$${parseFloat(row.totalWon).toFixed(0)}</td></tr>`;
+                });
+                if (!html) html = '<tr><td colspan="3">No wins yet</td></tr>';
+                $('leaderTable').innerHTML = html;
+            } catch(e) {}
+        }
+        loadLeaderboard();
+
+        // ─── Daily Bonus ───
+        async function checkDaily() {
+            if (!currentUser) return;
+            try {
+                const r = await fetch(API_BASE + '/stats/' + currentUser.userId);
+                const stats = await r.json();
+                $('dailyBar').style.display = 'flex';
+                $('voucherBar').style.display = 'flex';
+                if (stats.dailyClaimed) {
+                    $('dailyBtn').disabled = true;
+                    $('dailyBtn').textContent = '✅ CLAIMED';
+                    $('dailyStreak').textContent = 'Come back tomorrow';
+                } else {
+                    $('dailyBtn').disabled = false;
+                    $('dailyStreak').textContent = 'Claim your free bonus!';
+                }
+            } catch(e) {}
+        }
+        async function claimDaily() {
+            if (!currentUser) return;
+            try {
+                const r = await fetch(API_BASE + '/daily-bonus', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: currentUser.userId })
+                });
+                const data = await r.json();
+                alert(data.message || 'Bonus claimed!');
+                $('dailyBtn').disabled = true;
+                $('dailyBtn').textContent = '✅ CLAIMED';
+                loadBalance();
+            } catch(e) { alert('Failed to claim bonus'); }
+        }
+
+        // ─── Voucher ───
+        async function redeemVoucher() {
+            if (!currentUser) return alert('Login first');
+            const code = $('voucherCode').value.trim();
+            if (!code) return alert('Enter a code');
+            try {
+                const r = await fetch(API_BASE + '/voucher/redeem', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: currentUser.userId, code })
+                });
+                const data = await r.json();
+                alert(data.message || 'Voucher redeemed!');
+                $('voucherCode').value = '';
+                loadBalance();
+            } catch(e) { alert('Invalid voucher'); }
+        }
+
+        function onLoginSuccess() {
+            document.getElementById('loginArea').style.display = 'none';
+            document.getElementById('balanceArea').style.display = 'block';
+            document.getElementById('userArea').style.display = 'block';
+            document.getElementById('welcomeUser').textContent = `Welcome, ${currentUser.username}!`;
+            loadBalance();
+            checkDaily();
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('loginArea').style.display = 'flex';
+            document.getElementById('balanceArea').style.display = 'none';
+            document.getElementById('userArea').style.display = 'none';
+        }
+
+        // ─── Event Listeners ───
+        document.getElementById('loginBtn').onclick = login;
+        document.getElementById('registerBtn').onclick = register;
+        document.getElementById('logoutBtn').onclick = logout;
+
+        // Allow Enter key to login
+        document.getElementById('password').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') login();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🕹️ MAME Launcher — Tetris + Cherry Master</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0a;
+            color: #ccc;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .panel {
+            max-width: 480px;
+            width: 100%;
+            background: #1a1a1a;
+            border: 2px solid #444;
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+        }
+        .panel h1 { color: #ff6600; font-size: 1.5rem; margin-bottom: 6px; }
+        .panel .rom-tag {
+            display: inline-block;
+            background: #333;
+            color: #ffcc00;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 20px;
+        }
+        .status {
+            font-size: 1rem;
+            margin: 15px 0;
+            padding: 12px;
+            border-radius: 10px;
+            background: #222;
+        }
+        .status.success { color: #4caf50; border: 1px solid #4caf50; }
+        .status.error { color: #f44336; border: 1px solid #f44336; }
+        .status.pending { color: #ffcc00; border: 1px solid #ffcc00; }
+        .spinner {
+            width: 30px; height: 30px;
+            border: 3px solid #333;
+            border-top-color: #ffcc00;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin: 10px auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        button {
+            padding: 12px 30px;
+            border-radius: 24px;
+            border: 2px solid #ff6600;
+            background: #2a1200;
+            color: #ff8800;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            margin: 8px;
+        }
+        button:hover { background: #3a1a00; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .controls-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #111;
+            border-radius: 10px;
+            text-align: left;
+            font-size: 0.8rem;
+            line-height: 1.6;
+        }
+        .controls-info kbd {
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            font-family: monospace;
+        }
+        .controls-info h4 { color: #ff8800; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+<div class="panel">
+    <h1>🧱 Tetris + Cherry Master</h1>
+    <div class="rom-tag" id="romTag">ROM: cmtetris</div>
+    <p style="color:#888;font-size:0.8rem;margin-bottom:14px;">Combo arcade board — switch between Tetris and Cherry Master slots</p>
+
+    <div id="statusArea">
+        <div class="status pending" id="statusMsg">
+            Ready to launch MAME emulator
+        </div>
+    </div>
+
+    <button id="launchBtn" onclick="launchMame()">🚀 Launch MAME</button>
+    <button onclick="window.close()" style="background:#333;border-color:#555;color:#aaa;">Close</button>
+
+    <div class="controls-info">
+        <h4>🎮 MAME Controls</h4>
+        <p><strong style="color:#ff8800;">Cherry Master (Slot mode):</strong></p>
+        <p><kbd>5</kbd> / <kbd>6</kbd> — Insert coin / Bet</p>
+        <p><kbd>1</kbd> / <kbd>2</kbd> — Start / Spin</p>
+        <p><kbd>Arrow Keys</kbd> — Hold reels / Navigate</p>
+        <p style="margin-top:8px;"><strong style="color:#ff8800;">Tetris mode:</strong></p>
+        <p><kbd>← →</kbd> — Move piece left/right</p>
+        <p><kbd>↓</kbd> — Soft drop</p>
+        <p><kbd>Space / Button</kbd> — Rotate / Hard drop</p>
+        <p style="margin-top:8px;"><kbd>Esc</kbd> — Exit game &nbsp;|&nbsp; <kbd>Tab</kbd> — MAME menu</p>
+        <p style="margin-top:8px;color:#888;">Use the service/test switch in MAME to toggle between Tetris and slots mode.</p>
+    </div>
+</div>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const rom = params.get('rom') || 'cmtetris';
+    const userId = params.get('userId');
+    document.getElementById('romTag').textContent = 'ROM: ' + rom;
+
+    let balancePollInterval = null;
+
+    async function pollBalance() {
+        if (!userId) return;
+        try {
+            const res = await fetch('/api/mame/status/' + userId);
+            const data = await res.json();
+            const statusMsg = document.getElementById('statusMsg');
+            if (data.activeSession) {
+                statusMsg.textContent =
+                    '🎮 MAME running — Balance: $' + parseFloat(data.balance || 0).toFixed(2) +
+                    ' | Session: ' + data.activeSession.rom;
+                statusMsg.className = 'status success';
+            }
+        } catch (e) { /* ignore poll errors */ }
+    }
+
+    async function launchMame() {
+        const btn = document.getElementById('launchBtn');
+        const statusMsg = document.getElementById('statusMsg');
+        btn.disabled = true;
+        btn.textContent = '⏳ Launching...';
+
+        statusMsg.textContent = 'Spawning MAME with balance sync...';
+        statusMsg.className = 'status pending';
+
+        try {
+            const body = { rom: rom };
+            if (userId) body.userId = parseInt(userId);
+
+            const res = await fetch('/api/mame/launch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                statusMsg.textContent = '✅ MAME launched! Balance syncing enabled. ' +
+                    (userId ? 'Bets will be tracked to your account.' : 'Playing in demo mode.');
+                statusMsg.className = 'status success';
+                btn.textContent = '✅ Launched';
+
+                // Start polling balance
+                if (userId) {
+                    balancePollInterval = setInterval(pollBalance, 3000);
+                    pollBalance();
+                }
+            } else {
+                statusMsg.textContent = '❌ ' + (data.error || 'Failed to launch MAME');
+                statusMsg.className = 'status error';
+                btn.disabled = false;
+                btn.textContent = '🔄 Retry';
+            }
+        } catch (err) {
+            statusMsg.textContent = '❌ Server error: ' + err.message;
+            statusMsg.className = 'status error';
+            btn.disabled = false;
+            btn.textContent = '🔄 Retry';
+        }
+    }
+
+    // Clean up polling on page close
+    window.addEventListener('beforeunload', function() {
+        if (balancePollInterval) clearInterval(balancePollInterval);
+    });
+</script>
+</body>
+</html>

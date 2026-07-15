@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🏎️ Road Rage</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --panel: #0d0d0d;
+            --border: #222;
+            --orange: #ff4400;
+            --gold: #ff8800;
+            --blue: #2288ff;
+            --purple: #a020f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            color: #ccc;
+        }
+        .machine {
+            max-width: 780px;
+            width: 100%;
+            background: linear-gradient(180deg, #0f0f0f 0%, #080808 50%, #0a0a0a 100%);
+            border: 2px solid #1a1a1a;
+            border-radius: 22px;
+            padding: 20px;
+            box-shadow: 0 0 60px rgba(255,50,0,0.06);
+        }
+
+        /* Header */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .logo {
+            font-size: 1.7rem;
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: 1px;
+            background: linear-gradient(90deg, #ff3300, #ff7700, #ff3300);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .chip {
+            font-size: 0.6rem;
+            letter-spacing: 2px;
+            color: #ff4400;
+        }
+        .jp-display {
+            text-align: center;
+            background: linear-gradient(90deg, #150000, #250000, #150000);
+            border: 1px solid #ff440044;
+            border-radius: 8px;
+            padding: 7px;
+            margin-bottom: 10px;
+            font-size: 0.8rem;
+            color: #ffcc00;
+            font-weight: bold;
+            animation: jp 2s ease-in-out infinite;
+        }
+        @keyframes jp { 0%,100%{text-shadow:0 0 6px rgba(255,180,0,0.2)} 50%{text-shadow:0 0 16px rgba(255,180,0,0.6)} }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            border-radius: 10px;
+            padding: 10px 16px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .info-row .credits {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ff8800;
+            font-family: 'Courier New', monospace;
+        }
+        .info-row .sub { font-size: 0.7rem; color: #555; }
+        .info-row button {
+            background: #111; color: #888; border: 1px solid #222;
+            padding: 5px 12px; border-radius: 10px; cursor: pointer; font-size: 0.7rem; font-weight: bold;
+        }
+        .bet-btns { display: flex; gap: 3px; }
+        .bet-btns button {
+            background: #111; color: #666; border: 1px solid #1a1a1a;
+            padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 0.7rem; font-weight: bold; min-width:32px;
+        }
+        .bet-btns button.sel { background: #1a0800; border-color: #ff4400; color: #ff8800; }
+
+        /* Rage meter */
+        .rage-track { height: 5px; background: #111; border-radius: 3px; margin-bottom: 10px; overflow: hidden; }
+        .rage-fill { height: 100%; background: linear-gradient(90deg, #ff4400, #ff0000); border-radius: 3px; transition: width 0.3s; }
+
+        /* Stats */
+        .stats { display: flex; gap: 6px; margin-bottom: 8px; }
+        .stat { flex:1; background:#0a0a0a; border:1px solid #1a1a1a; border-radius:6px; padding:5px; text-align:center; font-size:0.6rem; color:#555; }
+        .stat .v { font-size:0.8rem; color:#ff8800; font-weight:bold; }
+
+        /* Reels */
+        .reels-outer {
+            background: #020202;
+            border: 3px solid #1a1a1a;
+            border-radius: 16px;
+            padding: 12px 10px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        .reels-outer.rage { border-color: #ff0000; box-shadow: 0 0 30px rgba(255,0,0,0.25); }
+        .reels-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 5px;
+            position: relative;
+            z-index: 1;
+        }
+        .cell {
+            aspect-ratio: 1;
+            background: #0d0d0d;
+            border: 2px solid #1a1a1a;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .cell img {
+            width: 85%;
+            height: 85%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+        .cell.win {
+            border-color: #ff8800;
+            box-shadow: 0 0 14px rgba(255,100,0,0.5);
+            animation: wp 0.6s ease-in-out 3;
+        }
+        .cell.wild-cell { border-color: #ff4400; box-shadow: 0 0 8px rgba(255,60,0,0.4); background: #0f0500; }
+        .cell.scatter-cell { border-color: #2288ff; box-shadow: 0 0 8px rgba(34,136,255,0.3); }
+        .cell.xways-cell { border-color: #a020f0; box-shadow: 0 0 10px rgba(160,32,240,0.5); }
+        .cell .badge {
+            position: absolute; top: 2px; right: 3px;
+            font-size: 0.45rem; font-weight: bold; color: #ff0;
+            background: #000; padding: 1px 3px; border-radius: 3px;
+            display: none;
+        }
+        @keyframes wp { 0%,100%{box-shadow:0 0 8px rgba(255,100,0,0.3)} 50%{box-shadow:0 0 22px rgba(255,60,0,0.7)} }
+
+        /* Banners */
+        .banner {
+            text-align: center; padding: 6px; border-radius: 8px; margin-bottom: 6px;
+            font-size: 0.75rem; font-weight: bold; display: none;
+        }
+        .banner.fs { background:#080020; border:1px solid #30a; color:#88f; display:block; }
+        .banner.rage-on { background:#200000; border:1px solid #f00; color:#f66; display:block; animation:rp 0.3s infinite alternate; }
+        @keyframes rp { from{border-color:#f00} to{border-color:#f80} }
+
+        .win-text {
+            text-align: center; font-size: 1.3rem; font-weight: bold; color: #ff8800;
+            min-height: 1.5em; text-shadow:0 0 10px rgba(255,100,0,0.4);
+        }
+        .msg { text-align:center; font-size:0.65rem; color:#444; min-height:1.1em; margin-bottom:4px; }
+
+        /* Buttons */
+        .btn-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+        .btn {
+            padding: 9px 16px; border-radius: 20px; font-weight: bold; cursor: pointer;
+            font-size: 0.78rem; border: 2px solid transparent; transition: 0.2s;
+        }
+        .btn-spin {
+            background: linear-gradient(180deg, #ff4400, #cc2000); color: #fff;
+            border-color: #ff6600; font-size: 1rem; padding: 11px 36px;
+        }
+        .btn-spin:hover:not(:disabled) { background: linear-gradient(180deg, #ff6622, #dd3311); }
+        .btn-spin:disabled { opacity: 0.25; cursor: not-allowed; }
+        .btn-auto { background: #0a1a00; color: #8a8; border-color: #3a3; }
+        .btn-auto.on { background: #1a2a00; border-color: #6f6; color: #6f6; }
+        .btn-turbo { background: #1a0000; color: #f66; border-color: #600; }
+        .btn-turbo.on { background: #2a0000; border-color: #f00; }
+        .btn-gamble { background: #100a18; color: #c8f; border-color: #a0f; }
+        .btn-gamble:disabled { opacity: 0.25; }
+        .btn-buy { background: #080018; color: #8af; border-color: #40a; }
+        .btn-buy:disabled { opacity: 0.25; }
+        .btn-set { background: #111; color: #666; border-color: #1a1a1a; font-size: 0.65rem; }
+
+        /* Popups */
+        .overlay { display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.92); z-index:100; justify-content:center; align-items:center; }
+        .overlay.on { display:flex; }
+        .popup {
+            background: #111; border: 1px solid #ff4400; border-radius: 14px;
+            padding: 20px; max-width: 380px; width: 90%; max-height: 80vh; overflow-y: auto;
+        }
+        .popup h3 { color: #ff4400; margin-bottom: 10px; }
+        .popup label { display:block; margin:8px 0 3px; font-size:0.75rem; color:#666; }
+        .popup input, .popup select {
+            width:100%; padding:8px; border-radius:8px; border:1px solid #222; background:#0a0a0a; color:#fff; font-size:0.8rem;
+        }
+        .popup .btn-ok { margin-top:12px; background:#ff4400; border:none; color:#fff; padding:8px 20px; border-radius:10px; cursor:pointer; font-weight:bold; }
+        .popup .btn-no { background:#222; margin-left:6px; }
+        .gamble .amt { font-size:2rem; color:#ffcc00; margin:8px 0; }
+        .gamble .gbtn { padding:10px 28px; border:none; border-radius:10px; font-size:1rem; cursor:pointer; margin:4px; font-weight:bold; }
+        .gamble .gred { background:#c00; color:#fff; }
+        .gamble .gblack { background:#111; color:#fff; border:1px solid #333; }
+        .gamble .gcol { background:#ff4400; color:#fff; }
+    </style>
+</head>
+<body>
+<div class="machine">
+    <div class="top-bar">
+        <div>
+            <div class="logo">ROAD RAGE</div>
+            <div class="chip">●●●●● EXTREME VOLATILITY</div>
+        </div>
+        <button class="btn btn-set" onclick="toggleOverlay('setOver')">⚙️ SETTINGS</button>
+    </div>
+
+    <div class="jp-display">💰 PROGRESSIVE JACKPOT $<span id="jpVal">1,000</span></div>
+    <div class="rage-track"><div class="rage-fill" id="rageFill" style="width:0%"></div></div>
+
+    <div class="info-row">
+        <div>
+            <div class="credits" id="balDisp">$100.00</div>
+            <div class="sub">Bet: $<span id="betDisp">1.00</span> · Win: $<span id="sessWin">0</span></div>
+        </div>
+        <div class="bet-btns">
+            <button onclick="setStake(0.5)">0.50</button>
+            <button class="sel" id="bt1" onclick="setStake(1)">1</button>
+            <button id="bt2" onclick="setStake(2)">2</button>
+            <button id="bt5" onclick="setStake(5)">5</button>
+            <button id="bt10" onclick="setStake(10)">10</button>
+        </div>
+        <button onclick="location.href='lobby.html'">✕ Lobby</button>
+    </div>
+
+    <div class="stats">
+        <div class="stat"><div class="v" id="sSpins">0</div>Spins</div>
+        <div class="stat"><div class="v" id="sWin">$0</div>Total Win</div>
+        <div class="stat"><div class="v" id="sRTP">-</div>RTP</div>
+        <div class="stat"><div class="v" id="sFS">0</div>Bonuses</div>
+    </div>
+
+    <div class="banner" id="fsBanner">🔥 FREE SPINS · <span id="fsLeft">0</span> left · ×<span id="fsMult">1</span></div>
+    <div class="banner" id="rageBanner">💢 RAGE MODE — ALL WILDS ×3!</div>
+
+    <div class="reels-outer" id="reelsWrap">
+        <div class="reels-grid" id="reelsGrid"></div>
+    </div>
+
+    <div class="win-text" id="winText"></div>
+    <div class="msg" id="msgText">🏎️ Press SPIN</div>
+
+    <div class="btn-row">
+        <button class="btn btn-spin" id="spinBtn">🏎️ SPIN</button>
+        <button class="btn btn-gamble" id="gambleBtn" disabled>🎲 GAMBLE</button>
+        <button class="btn btn-buy" id="buyBtn" disabled>💎 BUY ($<span id="buyPrice">80</span>)</button>
+    </div>
+    <div class="btn-row" style="margin-top:4px;">
+        <button class="btn btn-auto" id="autoBtn" onclick="toggleAuto()">🔄 AUTO: OFF</button>
+        <button class="btn btn-turbo" id="turboBtn" onclick="toggleTurbo()">⚡ TURBO: OFF</button>
+        <button class="btn btn-set" onclick="toggleOverlay('autoOver')">🎯 AUTO SET</button>
+    </div>
+</div>
+
+<!-- Gamble -->
+<div class="overlay" id="gambleOver">
+    <div class="popup gamble">
+        <h3>🎲 DOUBLE OR NOTHING</h3>
+        <div class="amt" id="gAmt">$0.00</div>
+        <p style="color:#666;">Pick a color</p>
+        <button class="gbtn gred" onclick="doGamble('red')">🔴 RED</button>
+        <button class="gbtn gblack" onclick="doGamble('black')">⚫ BLACK</button><br>
+        <button class="gbtn gcol" onclick="collectGamble()">💰 COLLECT ($<span id="gCol">0</span>)</button>
+    </div>
+</div>
+
+<!-- Settings -->
+<div class="overlay" id="setOver">
+    <div class="popup"><h3>⚙️ Settings</h3><p style="color:#555;">Sound: Off</p><button class="btn-ok" onclick="toggleOverlay('setOver')">Close</button></div>
+</div>
+
+<!-- Autoplay Settings -->
+<div class="overlay" id="autoOver">
+    <div class="popup">
+        <h3>🔄 Autoplay</h3>
+        <label>Spins (0=infinite)</label><input type="number" id="aSpins" value="50" min="0" max="999">
+        <label>Stop if win ≥ $</label><input type="number" id="aStopW" value="0" min="0">
+        <label>Stop if balance ≤ $</label><input type="number" id="aStopL" value="0" min="0">
+        <label>Stop on bonus</label><select id="aStopF"><option value="1">Yes</option><option value="0">No</option></select>
+        <button class="btn-ok" onclick="startAuto()">START</button>
+        <button class="btn-ok btn-no" onclick="toggleOverlay('autoOver')">Cancel</button>
+    </div>
+</div>
+
+<script>
+// ==================== GAME ENGINE ====================
+const IMG_PATH = 'images/road-rage/';
+const API_BASE = '/api';
+
+// Symbol definitions using real images
+// 0=wild(css) 1=scatter(css) 2-6=M1-M5 mid 7-11=L1-L5 low 12=xWays(css)
+const SYM = [
+    { img:null, n:'WILD',    p5:0,  p4:0,  p3:0,   wild:true, css:'🚦' },
+    { img:null, n:'SCATTER', p5:0,  p4:0,  p3:0,   scat:true, css:'🚔' },
+    { img:'M1.png', n:'M1',  p5:50, p4:20, p3:8 },
+    { img:'M2.png', n:'M2',  p5:30, p4:12, p3:5 },
+    { img:'M3.png', n:'M3',  p5:20, p4:8,  p3:3 },
+    { img:'M4.png', n:'M4',  p5:14, p4:6,  p3:2.5 },
+    { img:'M5.png', n:'M5',  p5:10, p4:4,  p3:1.5 },
+    { img:'L1.png', n:'L1',  p5:8,  p4:3,  p3:1 },
+    { img:'L2.png', n:'L2',  p5:6,  p4:2.5,p3:0.8 },
+    { img:'L3.png', n:'L3',  p5:5,  p4:2,  p3:0.6 },
+    { img:'L4.png', n:'L4',  p5:4,  p4:1.8,p3:0.5 },
+    { img:'L5.png', n:'L5',  p5:3,  p4:1.5,p3:0.4 },
+    { img:null, n:'xWays',   p5:0,  p4:0,  p3:0,   xways:true, css:'❓' },
+];
+
+// Reel strips (heavily weighted toward low/mid symbols)
+const STRIPS = [
+    [1,8,9,10,11,7,8,2,9,10,11,8,0,9,10,7,11,8,1,9,10,11,7,8,3,9,10,11,8,2,12,9,10,7,11,8,9,10,4,11,7,8,9,10,11,5,8,9,10,11],
+    [7,8,9,10,11,8,9,10,12,7,11,8,0,9,10,11,7,8,9,10,11,8,3,9,10,1,7,8,9,11,10,8,7,9,11,0,8,9,10,11,5,7,8,9,10,11,8,9,4,7],
+    [10,7,8,9,11,10,8,12,9,11,7,10,0,8,9,11,10,8,7,9,1,11,10,8,9,7,11,10,8,9,3,11,0,7,8,9,10,11,8,2,7,9,10,11,8,7,9,5,10,11],
+    [8,9,7,10,11,8,9,0,7,10,11,8,9,12,10,7,11,8,9,10,11,7,2,8,9,10,1,11,8,9,7,10,11,8,4,9,7,10,11,8,9,10,5,7,11,8,9,10,7,11],
+    [11,7,8,9,10,11,8,0,9,7,10,11,8,9,7,12,10,11,8,9,10,2,7,11,8,0,9,10,11,7,8,9,10,3,11,7,8,9,10,11,1,8,9,7,10,11,4,8,9,7],
+];
+
+let grid = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]];
+let cells = [];
+
+// State
+let credits = 100, stake = 1, spinning = false, turbo = false;
+let autoActive = false, autoRemain = 0, autoCfg = { spins:50, stopW:0, stopL:0, stopF:true };
+let inFS = false, fsLeft = 0, fsMult = 1;
+let rage = 0, rageActive = false;
+let lastWin = 0, gambleAmt = 0;
+let sSpins = 0, sBet = 0, sWin = 0, sFS = 0;
+let jackpot = 1000;
+let currentUser = null;
+const PAYLINES = [
+    [1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],
+    [0,0,1,2,2],[2,2,1,0,0],[1,0,1,2,1],[1,2,1,0,1],[0,1,1,1,0],
+    [2,1,1,1,2],[1,1,0,1,1],[1,1,2,1,1],[0,2,0,2,0],[2,0,2,0,2],
+    [1,0,0,0,1],[1,2,2,2,1],[0,1,0,1,0],[2,1,2,1,2],[0,0,2,0,0],
+];
+
+// DOM
+const $ = id => document.getElementById(id);
+
+function buildGrid() {
+    const g = $('reelsGrid'); g.innerHTML = '';
+    for (let r = 0; r < 3; r++)
+        for (let c = 0; c < 5; c++) {
+            const d = document.createElement('div'); d.className = 'cell';
+            d.dataset.r = r; d.dataset.c = c; g.appendChild(d);
+        }
+    cells = document.querySelectorAll('.cell');
+}
+
+function init() {
+    buildGrid();
+    const p = new URLSearchParams(location.search);
+    const uid = p.get('userId');
+    if (uid) { currentUser = { userId: +uid }; loadBal(); }
+    randomGrid(); render(); updateUI(); fetchJP();
+}
+
+function randomGrid() {
+    for (let c = 0; c < 5; c++)
+        for (let r = 0; r < 3; r++)
+            grid[c][r] = STRIPS[c][Math.floor(Math.random() * STRIPS[c].length)];
+}
+
+function symHTML(sid) {
+    const s = SYM[sid];
+    if (s.img) return `<img src="${IMG_PATH}${s.img}" alt="${s.n}">`;
+    return `<span style="font-size:1.8rem;">${s.css}</span>`;
+}
+
+function render() {
+    cells.forEach(cell => {
+        const r = +cell.dataset.r, c = +cell.dataset.c;
+        const s = SYM[grid[c][r]];
+        cell.innerHTML = symHTML(grid[c][r]);
+        cell.className = 'cell';
+        if (s.wild) cell.classList.add('wild-cell');
+        if (s.scat) cell.classList.add('scatter-cell');
+        if (s.xways) cell.classList.add('xways-cell');
+    });
+}
+
+function clearStyles() { cells.forEach(c => c.classList.remove('win','wild-cell','scatter-cell','xways-cell')); }
+
+function updateUI() {
+    $('balDisp').textContent = '$' + credits.toFixed(2);
+    $('betDisp').textContent = stake.toFixed(2);
+    $('sessWin').textContent = sWin.toFixed(0);
+    $('spinBtn').disabled = spinning || credits < stake;
+    $('gambleBtn').disabled = lastWin <= 0 || spinning;
+    $('buyBtn').disabled = spinning || inFS || credits < stake * 80;
+    $('buyPrice').textContent = (stake * 80).toFixed(0);
+    $('jpVal').textContent = jackpot.toFixed(0);
+    $('rageFill').style.width = rage + '%';
+    $('reelsWrap').classList.toggle('rage', rageActive);
+    $('sSpins').textContent = sSpins; $('sWin').textContent = '$'+sWin.toFixed(0);
+    $('sRTP').textContent = sBet > 0 ? (sWin/sBet*100).toFixed(1)+'%' : '-';
+    $('sFS').textContent = sFS;
+    if (inFS) { $('fsBanner').style.display='block'; $('fsLeft').textContent=fsLeft; $('fsMult').textContent=fsMult; }
+    else $('fsBanner').style.display='none';
+    $('rageBanner').style.display = rageActive ? 'block' : 'none';
+    document.querySelectorAll('.bet-btns button').forEach(b=>b.classList.remove('sel'));
+    const bm={0.5:0,1:1,2:2,5:3,10:4}; const bs=document.querySelectorAll('.bet-btns button');
+    if (bm[stake]!==undefined) bs[bm[stake]].classList.add('sel');
+}
+
+function setStake(v) { if (!spinning) { stake = v; updateUI(); } }
+function toggleTurbo() { turbo = !turbo; $('turboBtn').textContent = '⚡ TURBO: '+(turbo?'ON':'OFF'); $('turboBtn').classList.toggle('on',turbo); }
+
+// ==================== AUTOPLAY ====================
+function toggleAuto() { autoActive ? stopAuto('Stopped') : startAuto(); }
+function startAuto() {
+    autoCfg.spins = +($('aSpins').value) || 50;
+    autoCfg.stopW = +($('aStopW').value) || 0;
+    autoCfg.stopL = +($('aStopL').value) || 0;
+    autoCfg.stopF = $('aStopF').value === '1';
+    autoRemain = autoCfg.spins;
+    autoActive = true;
+    $('autoBtn').textContent = '🔄 AUTO: ' + autoRemain;
+    $('autoBtn').classList.add('on');
+    toggleOverlay('autoOver');
+    doSpin();
+}
+function stopAuto(msg) {
+    autoActive = false;
+    $('autoBtn').textContent = '🔄 AUTO: OFF';
+    $('autoBtn').classList.remove('on');
+    if (msg) $('msgText').textContent = msg;
+}
+function checkAuto() {
+    if (!autoActive) return;
+    if (autoCfg.spins > 0) { autoRemain--; $('autoBtn').textContent = '🔄 AUTO: ' + autoRemain; }
+    if (autoCfg.spins > 0 && autoRemain <= 0) { stopAuto('Done'); return; }
+    if (autoCfg.stopW > 0 && lastWin >= autoCfg.stopW) { stopAuto('Win limit!'); return; }
+    if (autoCfg.stopL > 0 && credits <= autoCfg.stopL) { stopAuto('Loss limit!'); return; }
+    if (autoCfg.stopF && inFS) { stopAuto('Bonus!'); return; }
+    if (credits < stake) { stopAuto('No credits'); return; }
+    setTimeout(() => doSpin(), turbo ? 180 : 550);
+}
+
+// ==================== SPIN ====================
+async function doSpin() {
+    if (spinning || credits < stake) { stopAuto('Cannot spin'); return; }
+    spinning = true; lastWin = 0;
+    credits -= stake; sSpins++; sBet += stake;
+    $('winText').textContent = ''; $('gambleBtn').disabled = true;
+    clearStyles(); updateUI();
+
+    let betId = null;
+    if (currentUser) {
+        try {
+            const r = await fetch(API_BASE+'/placeBet',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:currentUser.userId,gameId:3,amount:stake})});
+            const d = await r.json(); if (d.success) betId = d.betId;
+        } catch(e) {}
+    }
+
+    await animate(turbo ? 180 : 480);
+
+    for (let c = 0; c < 5; c++)
+        for (let r = 0; r < 3; r++)
+            grid[c][r] = STRIPS[c][Math.floor(Math.random() * STRIPS[c].length)];
+
+    let wM = [1,1,1,1,1];
+    // xWays
+    for (let c = 0; c < 5; c++) {
+        if (grid[c].some(r => SYM[r].xways)) {
+            const rs = 2 + Math.floor(Math.random() * 7);
+            const n = 2 + Math.floor(Math.random() * 2);
+            for (let r = 0; r < Math.min(n,3); r++) grid[c][r] = rs;
+            wM[c] += n;
+        }
+    }
+    // xNudge Wild
+    for (let c = 0; c < 5; c++) {
+        if (grid[c].some(r => SYM[r].wild)) {
+            for (let r = 0; r < 3; r++) grid[c][r] = 0;
+            wM[c] += rageActive ? 5 : 3;
+        }
+    }
+    // Rage meter
+    rage = Math.min(100, rage + (lastWin > 0 ? -10 : 5));
+    if (rage >= 100 && !rageActive) {
+        rageActive = true; rage = 0;
+        $('msgText').textContent = '💢 RAGE MODE!';
+        for (let c = 0; c < 5; c++) if (Math.random() < 0.45) { for (let r=0;r<3;r++) grid[c][r]=0; wM[c]+=3; }
+    } else if (rageActive) rageActive = false;
+
+    render();
+    const res = evalWin(wM);
+    let tw = res.total * (inFS ? fsMult : 1) * (rageActive ? 2 : 1);
+
+    if (Math.random() < 0.002 && tw > 0) { tw += jackpot; $('msgText').textContent = '🎉 JACKPOT!'; jackpot = 1000; updateJP(); }
+    jackpot += stake * 0.01; updateJP();
+
+    if (tw > 0) {
+        credits += tw; lastWin = tw; sWin += tw;
+        $('winText').textContent = '🏎️ $' + tw.toFixed(2);
+        $('msgText').textContent = res.wins.length + ' lines' + (rageActive?' · RAGE ×2':'');
+        hiWin(res.wins);
+        if (currentUser && betId) {
+            try { await fetch(API_BASE+'/processWin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({betId,winAmount:tw})}); } catch(e){}
+        }
+    } else {
+        $('msgText').textContent = rageActive ? 'RAGE — keep spinning!' : (inFS?'Free spin':'Floor it!');
+    }
+
+    let sc = 0;
+    for (let c=0;c<5;c++) for(let r=0;r<3;r++) if(SYM[grid[c][r]].scat) sc++;
+    if (sc >= 3 && !inFS) {
+        inFS = true; fsLeft = 8 + (sc-3)*2; fsMult = 1; sFS++;
+        $('msgText').textContent = '🚔 FREE SPINS! ' + fsLeft;
+        if (autoCfg.stopF && autoActive) stopAuto('Bonus!');
+    }
+    if (inFS) { fsLeft--; fsMult++; if (fsLeft <= 0) { inFS = false; $('msgText').textContent = 'FS ended ×'+fsMult; } }
+
+    updateUI(); spinning = false;
+    if (autoActive) checkAuto();
+}
+
+function animate(ms) {
+    return new Promise(r => {
+        let s = 0; const st = ms / 36;
+        const t = setInterval(() => {
+            cells.forEach(cell => {
+                const c = +cell.dataset.c;
+                cell.innerHTML = symHTML(STRIPS[c][Math.floor(Math.random()*STRIPS[c].length)]);
+                cell.className = 'cell';
+            });
+            if (++s >= st) { clearInterval(t); r(); }
+        }, 36);
+    });
+}
+
+// ==================== EVALUATION ====================
+function evalWin(wM) {
+    let total = 0; const wins = [];
+    PAYLINES.forEach((line,li) => {
+        const syms = line.map((row,col) => grid[col][row]);
+        const first = syms[0];
+        if (SYM[first].scat) return;
+        let cnt = 0;
+        for (let i = 0; i < 5; i++) {
+            if (SYM[syms[i]].wild || syms[i] === first || SYM[first].wild) cnt++;
+            else break;
+        }
+        if (cnt === 0 && SYM[first].wild) {
+            for (let i = 0; i < 5; i++) {
+                if (!SYM[syms[i]].wild) {
+                    let c2 = 0;
+                    for (let j = i; j < 5; j++) {
+                        if (SYM[syms[j]].wild || syms[j] === syms[i]) c2++; else break;
+                    }
+                    if (c2 >= 3 && SYM[syms[i]]['p'+Math.min(c2,5)]) {
+                        total += SYM[syms[i]]['p'+Math.min(c2,5)] * stake * (wM[line[0]]||1);
+                        wins.push({cells:line.map((r,c)=>[r,c])});
+                    }
+                    break;
+                }
+            }
+            return;
+        }
+        if (cnt >= 3 && SYM[first]['p'+Math.min(cnt,5)]) {
+            total += SYM[first]['p'+Math.min(cnt,5)] * stake * (wM[line[0]]||1);
+            wins.push({cells:line.map((r,c)=>[r,c])});
+        }
+    });
+    return { total, wins };
+}
+
+function hiWin(wins) {
+    wins.forEach(w => w.cells.forEach(([r,c]) => {
+        const cell = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+        if (cell) cell.classList.add('win');
+    }));
+}
+
+// ==================== GAMBLE ====================
+function openGamble() { if (lastWin<=0) return; gambleAmt=lastWin; $('gAmt').textContent='$'+gambleAmt.toFixed(2); $('gCol').textContent=gambleAmt.toFixed(2); toggleOverlay('gambleOver'); }
+function doGamble(ch) {
+    const won = Math.random()<0.5; const color = won ? (Math.random()<0.5?'red':'black') : (ch==='red'?'black':'red');
+    if (ch === color) { gambleAmt*=2; $('gAmt').textContent='$'+gambleAmt.toFixed(2); $('gCol').textContent=gambleAmt.toFixed(2); $('winText').textContent='🎲 DOUBLED!'; }
+    else { $('gAmt').textContent='$0.00'; $('winText').textContent='😞 Lost'; toggleOverlay('gambleOver'); lastWin=0; updateUI(); }
+}
+function collectGamble() { if(gambleAmt>0){credits+=gambleAmt;sWin+=gambleAmt;$('winText').textContent='💰 $'+gambleAmt.toFixed(2);} lastWin=0;gambleAmt=0;toggleOverlay('gambleOver');updateUI(); }
+
+// ==================== BONUS BUY ====================
+async function buyBonus() {
+    if (spinning||inFS||credits<stake*80) return;
+    credits -= stake*80; sBet += stake*80;
+    inFS=true; fsLeft=8; fsMult=1; sFS++;
+    $('msgText').textContent='💎 BONUS BOUGHT!';
+    updateUI();
+}
+
+// ==================== JACKPOT ====================
+async function fetchJP() { try { const r=await fetch(API_BASE+'/jackpot'); const d=await r.json(); jackpot=d.jackpot||1000; updateUI(); } catch(e){} }
+async function updateJP() { try { await fetch(API_BASE+'/jackpot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jackpot})}); } catch(e){} }
+
+// ==================== UI ====================
+function toggleOverlay(id) { $(id).classList.toggle('on'); }
+async function loadBal() {
+    if (!currentUser) return;
+    try { const r=await fetch(API_BASE+'/balance/'+currentUser.userId); const d=await r.json(); credits=parseFloat(d.Balance||d.balance||100); updateUI(); } catch(e){}
+}
+
+$('spinBtn').onclick = doSpin;
+$('gambleBtn').onclick = openGamble;
+$('buyBtn').onclick = buyBonus;
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🎰 Nolimit City — Game</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0f1e;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: #121a2a;
+            border-bottom: 1px solid #1e3050;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+        .top-bar .game-title {
+            font-weight: bold;
+            font-size: 1rem;
+            color: #f3c623;
+        }
+        .top-bar .balance {
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+        .top-bar .balance span {
+            color: #f3c623;
+            font-weight: bold;
+        }
+        .top-bar button {
+            background: #2c3e44;
+            color: #fff;
+            border: 1px solid #f3c623;
+            padding: 6px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .top-bar button:hover { background: #3a525a; }
+        .game-container {
+            flex: 1;
+            position: relative;
+            background: #000;
+        }
+        #game-target {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #game-target iframe {
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+        .loading-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            color: #f3c623;
+            font-size: 1.2rem;
+        }
+        .loading-overlay .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #2c3e44;
+            border-top-color: #f3c623;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 6;
+            color: #e67e22;
+            text-align: center;
+            padding: 20px;
+        }
+        .error-overlay button {
+            margin-top: 15px;
+            background: #f3c623;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="game-title" id="gameTitle">Loading game...</div>
+        <div class="balance">💰 Balance: <span id="balanceDisplay">$0.00</span></div>
+        <button id="exitBtn">✕ Lobby</button>
+    </div>
+
+    <div class="game-container">
+        <div id="game-target"></div>
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="spinner"></div>
+            <div id="loadingMsg">Loading game...</div>
+        </div>
+        <div class="error-overlay" id="errorOverlay" style="display:none;">
+            <div id="errorMsg">Failed to load game.</div>
+            <button onclick="window.location.href='lobby.html'">← Back to Lobby</button>
+        </div>
+    </div>
+
+    <!-- nolimit.js from CDN -->
+    <script src="https://nolimitjs.nolimitcdn.com/dist/nolimit-latest.min.js"></script>
+    <script>
+        (function() {
+            // Get parameters from URL query string
+            const params = new URLSearchParams(window.location.search);
+            const userId = params.get('userId');
+            const gameName = params.get('game') || 'Mental';
+            const tokenParam = params.get('token');
+
+            const API_BASE = '/api';
+            let gameApi = null;
+
+            // ─── UI Elements ───
+            const gameTarget = document.getElementById('game-target');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const errorOverlay = document.getElementById('errorOverlay');
+            const loadingMsg = document.getElementById('loadingMsg');
+            const errorMsg = document.getElementById('errorMsg');
+            const balanceDisplay = document.getElementById('balanceDisplay');
+            const gameTitle = document.getElementById('gameTitle');
+            const exitBtn = document.getElementById('exitBtn');
+
+            // ─── Token / Auth ───
+            async function fetchToken() {
+                if (tokenParam) return tokenParam;
+
+                if (!userId) {
+                    // Try demo mode — no token, play-for-fun
+                    console.warn('No userId provided — loading in demo/play-for-fun mode');
+                    return null;
+                }
+
+                loadingMsg.textContent = 'Authenticating...';
+                try {
+                    const res = await fetch(`${API_BASE}/nolimit/token`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: parseInt(userId) })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+                    return data.token;
+                } catch (err) {
+                    console.error('Token fetch failed:', err);
+                    throw new Error('Authentication failed: ' + err.message);
+                }
+            }
+
+            // ─── Balance ───
+            async function loadBalance() {
+                if (!userId) { balanceDisplay.textContent = 'Demo'; return; }
+                try {
+                    const res = await fetch(`${API_BASE}/balance/${userId}`);
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    const bal = data.Balance !== undefined ? data.Balance : data.balance;
+                    balanceDisplay.textContent = '$' + parseFloat(bal || 0).toFixed(2);
+                } catch (e) {
+                    balanceDisplay.textContent = '$0.00';
+                }
+            }
+
+            // ─── Launch Game ───
+            async function launchGame() {
+                try {
+                    const token = await fetchToken();
+                    gameTitle.textContent = '🎰 ' + gameName;
+
+                    // Initialize nolimit
+                    if (typeof nolimit === 'undefined') {
+                        throw new Error('nolimit.js failed to load from CDN. Check your internet connection.');
+                    }
+
+                    nolimit.init({
+                        operator: token ? undefined : 'SMOOTHOPERATOR'
+                    });
+
+                    const loadOptions = {
+                        game: gameName,
+                        target: gameTarget,
+                        device: 'desktop'
+                    };
+
+                    if (token) {
+                        loadOptions.token = token;
+                    }
+
+                    gameApi = nolimit.load(loadOptions);
+
+                    // ─── Game Events ───
+                    gameApi.on('exit', function() {
+                        window.location.href = 'lobby.html';
+                    });
+
+                    gameApi.on('deposit', function() {
+                        // Open deposit dialog or redirect
+                        if (confirm('Would you like to go to the deposit page?')) {
+                            window.open('deposit.html', '_blank');
+                        }
+                    });
+
+                    gameApi.on('busy', function() {
+                        // Game is spinning/processing
+                    });
+
+                    gameApi.on('idle', function() {
+                        // Game is waiting for input — refresh balance
+                        loadBalance();
+                    });
+
+                    gameApi.on('ready', function() {
+                        loadingOverlay.style.display = 'none';
+                        loadBalance();
+                    });
+
+                    // Hide loading after a timeout in case 'ready' never fires
+                    setTimeout(function() {
+                        if (loadingOverlay.style.display !== 'none') {
+                            loadingOverlay.style.display = 'none';
+                        }
+                    }, 8000);
+
+                } catch (err) {
+                    console.error('Launch error:', err);
+                    loadingOverlay.style.display = 'none';
+                    errorOverlay.style.display = 'flex';
+                    errorMsg.textContent = err.message;
+                }
+            }
+
+            // ─── Deposit handling ───
+            function showDeposit() {
+                return new Promise(function(resolve) {
+                    // In a real casino, you'd open a deposit modal/iframe here
+                    if (confirm('Deposit funds to continue playing?')) {
+                        resolve(); // Player wants to continue after deposit
+                    }
+                });
+            }
+
+            // ─── Exit ───
+            exitBtn.onclick = function() {
+                if (confirm('Exit game and return to lobby?')) {
+                    window.location.href = 'lobby.html';
+                }
+            };
+
+            // ─── Start ───
+            launchGame();
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — Add Balance</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0a0f1e;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .panel {
+            max-width: 420px;
+            width: 100%;
+            background: #121a2a;
+            border: 1px solid #1e3050;
+            border-radius: 16px;
+            padding: 25px;
+        }
+        .panel h2 {
+            color: #f3c623;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: #8899aa;
+            margin-bottom: 4px;
+            margin-top: 12px;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #2c3e44;
+            background: #1a2735;
+            color: #fff;
+            font-size: 1rem;
+        }
+        input:focus, select:focus {
+            border-color: #f3c623;
+            outline: none;
+        }
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+        .row > * { flex: 1; }
+        button {
+            width: 100%;
+            margin-top: 18px;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            background: #f3c623;
+            color: #121a2a;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover { background: #ffda44; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .result {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+        .result.success {
+            display: block;
+            background: #0a2a0a;
+            border: 1px solid #4caf50;
+            color: #4caf50;
+        }
+        .result.error {
+            display: block;
+            background: #2a0a0a;
+            border: 1px solid #f44336;
+            color: #f44336;
+        }
+        .quick-amounts {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .quick-amounts button {
+            flex: 1;
+            margin-top: 0;
+            padding: 6px;
+            font-size: 0.8rem;
+            background: #1e3050;
+            color: #f3c623;
+            border: 1px solid #2c3e44;
+        }
+        .quick-amounts button:hover { background: #2c4a6e; }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #556;
+            font-size: 0.8rem;
+            text-decoration: none;
+        }
+        .back-link:hover { color: #f3c623; }
+    </style>
+</head>
+<body>
+<div class="panel">
+    <h2>💰 Admin — Add Balance</h2>
+
+    <label>Username</label>
+    <input type="text" id="username" placeholder="e.g. TestPlayer" value="TestPlayer">
+
+    <label>or User ID</label>
+    <div class="row">
+        <input type="number" id="userId" placeholder="e.g. 1">
+    </div>
+
+    <label>Amount ($)</label>
+    <input type="number" id="amount" placeholder="100.00" value="100" step="1" min="1">
+    <div class="quick-amounts">
+        <button onclick="setAmount(10)">$10</button>
+        <button onclick="setAmount(50)">$50</button>
+        <button onclick="setAmount(100)">$100</button>
+        <button onclick="setAmount(500)">$500</button>
+        <button onclick="setAmount(1000)">$1,000</button>
+    </div>
+
+    <label>Type</label>
+    <select id="type">
+        <option value="balance">Real Balance</option>
+        <option value="bonus">Bonus Balance</option>
+    </select>
+
+    <button id="submitBtn" onclick="addBalance()">Add Balance</button>
+
+    <div class="result" id="result"></div>
+
+    <a href="lobby.html" class="back-link">← Back to Lobby</a>
+</div>
+
+<script>
+    function setAmount(v) {
+        document.getElementById('amount').value = v;
+    }
+
+    async function addBalance() {
+        const btn = document.getElementById('submitBtn');
+        const result = document.getElementById('result');
+        const username = document.getElementById('username').value.trim();
+        const userId = document.getElementById('userId').value.trim();
+        const amount = document.getElementById('amount').value;
+        const type = document.getElementById('type').value;
+
+        if (!amount || parseFloat(amount) <= 0) {
+            result.className = 'result error';
+            result.textContent = 'Enter a valid amount';
+            return;
+        }
+
+        if (!username && !userId) {
+            result.className = 'result error';
+            result.textContent = 'Enter a username or user ID';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Adding...';
+        result.className = 'result';
+        result.textContent = '';
+
+        try {
+            const body = { amount: parseFloat(amount), type };
+            if (userId) body.userId = parseInt(userId);
+            if (username) body.username = username;
+
+            const res = await fetch('/api/admin/add-balance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                result.className = 'result success';
+                result.textContent = '✅ Added $' + data.added.toFixed(2) +
+                    ' | New Balance: $' + parseFloat(data.balance).toFixed(2) +
+                    (data.bonusBalance > 0 ? ' | Bonus: $' + parseFloat(data.bonusBalance).toFixed(2) : '');
+            } else {
+                result.className = 'result error';
+                result.textContent = '❌ ' + (data.error || 'Failed');
+            }
+        } catch (err) {
+            result.className = 'result error';
+            result.textContent = '❌ ' + err.message;
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Add Balance';
+        }
+    }
+
+    // Enter key submits
+    document.getElementById('amount').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') addBalance();
+    });
+</script>
+</body>
+</html>

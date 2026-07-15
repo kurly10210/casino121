@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍒 Cherry Master</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #1a0a0a 0%, #2d0808 50%, #1a0a0a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #f0e0c0;
+        }
+        .machine {
+            max-width: 520px;
+            width: 100%;
+            background: linear-gradient(180deg, #3a1010 0%, #2a0808 30%, #1a0505 70%, #0d0202 100%);
+            border: 3px solid #8b6914;
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(255, 100, 0, 0.15), inset 0 0 20px rgba(0,0,0,0.5);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .header h1 {
+            font-size: 1.6rem;
+            color: #ff4444;
+            text-shadow: 0 0 10px #ff000080, 0 2px 4px #000;
+            letter-spacing: 3px;
+            font-family: 'Georgia', serif;
+        }
+        .header .subtitle {
+            font-size: 0.7rem;
+            color: #cc8844;
+            letter-spacing: 2px;
+        }
+        /* Balance bar */
+        .balance-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0a0a0a;
+            border: 1px solid #8b6914;
+            border-radius: 10px;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+        }
+        .balance-bar .credits {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffcc00;
+            text-shadow: 0 0 8px #ff8800;
+            font-family: 'Courier New', monospace;
+        }
+        .balance-bar .bet-display {
+            font-size: 0.85rem;
+            color: #cc8844;
+        }
+        .balance-bar button {
+            background: #5a2020;
+            color: #f0e0c0;
+            border: 1px solid #8b6914;
+            padding: 6px 14px;
+            border-radius: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.8rem;
+            transition: 0.15s;
+        }
+        .balance-bar button:hover { background: #7a3030; }
+        /* Reels */
+        .reels-container {
+            background: #0a0a0a;
+            border: 4px solid #8b6914;
+            border-radius: 16px;
+            padding: 8px;
+            margin-bottom: 12px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.7);
+        }
+        .reels-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 6px;
+        }
+        .reel-cell {
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1e);
+            border: 2px solid #333;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.8rem;
+            transition: background 0.1s;
+            position: relative;
+        }
+        .reel-cell.win-highlight {
+            border-color: #ffcc00;
+            box-shadow: 0 0 12px #ff880066;
+            animation: winPulse 0.5s ease-in-out 3;
+        }
+        @keyframes winPulse {
+            0%, 100% { box-shadow: 0 0 12px #ff880066; }
+            50% { box-shadow: 0 0 25px #ff8800cc; }
+        }
+        .reel-cell.spinning {
+            animation: reelBlur 0.08s linear infinite;
+        }
+        @keyframes reelBlur {
+            0% { filter: blur(0px); }
+            50% { filter: blur(3px); }
+            100% { filter: blur(0px); }
+        }
+        /* Payline indicator */
+        .payline-info {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #cc8844;
+            margin-bottom: 10px;
+            min-height: 1.2em;
+        }
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        .controls button {
+            padding: 10px 16px;
+            border-radius: 20px;
+            border: 2px solid #8b6914;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.15s;
+            min-width: 60px;
+        }
+        .btn-spin {
+            background: linear-gradient(180deg, #ff4444, #cc0000);
+            color: #fff;
+            font-size: 1.1rem;
+            padding: 12px 40px;
+            border-color: #ff6666;
+            text-shadow: 0 1px 2px #000;
+        }
+        .btn-spin:hover:not(:disabled) { background: linear-gradient(180deg, #ff6666, #dd1111); }
+        .btn-spin:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-bet { background: #2a2020; color: #f0e0c0; }
+        .btn-bet:hover { background: #3a3030; }
+        .btn-bet.active { background: #8b6914; color: #fff; border-color: #ffcc00; }
+        .btn-hold {
+            background: #1a2020;
+            color: #88bbff;
+            border-color: #4488cc;
+        }
+        .btn-hold:hover:not(:disabled) { background: #223030; }
+        .btn-hold.held {
+            background: #224488;
+            color: #fff;
+            border-color: #88ccff;
+            box-shadow: 0 0 8px #4488ff;
+        }
+        .btn-nudge {
+            background: #202010;
+            color: #ffcc44;
+            border-color: #cc8800;
+        }
+        .btn-nudge:hover:not(:disabled) { background: #303020; }
+        .btn-gamble {
+            background: #200820;
+            color: #cc88ff;
+            border-color: #8822cc;
+        }
+        .btn-gamble:hover:not(:disabled) { background: #301030; }
+        /* Gamble overlay */
+        .gamble-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .gamble-overlay.active { display: flex; }
+        .gamble-card {
+            background: #1a0505;
+            border: 2px solid #cc88ff;
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            max-width: 300px;
+        }
+        .gamble-card h3 { color: #cc88ff; margin-bottom: 10px; }
+        .gamble-card .amount { font-size: 1.8rem; color: #ffcc00; margin: 10px 0; }
+        .gamble-card button {
+            padding: 10px 25px;
+            margin: 5px;
+            border-radius: 20px;
+            border: 2px solid #8822cc;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .gamble-red { background: #cc0000; color: #fff; }
+        .gamble-black { background: #111; color: #fff; }
+        .gamble-collect { background: #8b6914; color: #fff; }
+        /* Win flash */
+        .win-flash {
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #ffcc00;
+            text-shadow: 0 0 15px #ff8800;
+            min-height: 1.5em;
+            margin-bottom: 6px;
+        }
+        /* Message bar */
+        .msg-bar {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #ff8888;
+            min-height: 1.2em;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+<div class="machine">
+    <div class="header">
+        <h1>🍒 CHERRY MASTER</h1>
+        <div class="subtitle">8-LINER FRUIT MACHINE</div>
+    </div>
+
+    <div class="balance-bar">
+        <div>
+            <div class="credits" id="credits">$100.00</div>
+            <div class="bet-display">Bet: <span id="betDisplay">8</span> lines × $<span id="stakeDisplay">1.00</span></div>
+        </div>
+        <button onclick="window.location.href='lobby.html'">✕ Lobby</button>
+    </div>
+
+    <div class="reels-container">
+        <div class="reels-grid" id="reelsGrid">
+            <div class="reel-cell" data-row="0" data-col="0">🍒</div>
+            <div class="reel-cell" data-row="0" data-col="1">🍒</div>
+            <div class="reel-cell" data-row="0" data-col="2">🍒</div>
+            <div class="reel-cell" data-row="1" data-col="0">🍒</div>
+            <div class="reel-cell" data-row="1" data-col="1">🍒</div>
+            <div class="reel-cell" data-row="1" data-col="2">🍒</div>
+            <div class="reel-cell" data-row="2" data-col="0">🍒</div>
+            <div class="reel-cell" data-row="2" data-col="1">🍒</div>
+            <div class="reel-cell" data-row="2" data-col="2">🍒</div>
+        </div>
+    </div>
+
+    <div class="payline-info" id="paylineInfo">8 paylines active</div>
+    <div class="win-flash" id="winFlash"></div>
+
+    <div class="controls">
+        <button class="btn-bet" id="btnBetDown">Bet−</button>
+        <button class="btn-bet active" id="btnBet1">$1</button>
+        <button class="btn-bet" id="btnBet2">$2</button>
+        <button class="btn-bet" id="btnBet5">$5</button>
+        <button class="btn-bet" id="btnBetMax">Max</button>
+    </div>
+    <div class="controls">
+        <button class="btn-hold" id="hold1" disabled>HOLD 1</button>
+        <button class="btn-hold" id="hold2" disabled>HOLD 2</button>
+        <button class="btn-hold" id="hold3" disabled>HOLD 3</button>
+    </div>
+    <div class="controls">
+        <button class="btn-nudge" id="btnNudge" disabled>NUDGE</button>
+        <button class="btn-spin" id="btnSpin">🎰 SPIN</button>
+        <button class="btn-gamble" id="btnGamble" disabled>GAMBLE</button>
+    </div>
+    <div class="msg-bar" id="msgBar">Insert credits to play</div>
+</div>
+
+<!-- Gamble overlay -->
+<div class="gamble-overlay" id="gambleOverlay">
+    <div class="gamble-card">
+        <h3>🎲 DOUBLE OR NOTHING</h3>
+        <div class="amount" id="gambleAmount">$0.00</div>
+        <p style="color:#ccc; margin-bottom:10px;">Pick a color</p>
+        <button class="gamble-red" onclick="doGamble('red')">🔴 RED</button>
+        <button class="gamble-black" onclick="doGamble('black')">⚫ BLACK</button>
+        <br>
+        <button class="gamble-collect" onclick="collectGamble()">💰 COLLECT</button>
+    </div>
+</div>
+
+<script>
+// ==================== GAME CONFIG ====================
+const API_BASE = '/api';
+let currentUser = null;
+let credits = 100;
+let stake = 1;
+let holdReels = [false, false, false];
+let nudgeCount = 0;
+let lastWin = 0;
+let gambleAmount = 0;
+let isSpinning = false;
+
+// Cherry Master symbols (ordered low to high)
+const SYMBOLS = [
+    { id: 'cherry',   emoji: '🍒', name: 'Cherry',  pay3: 5,   pay2: 2 },
+    { id: 'lemon',    emoji: '🍋', name: 'Lemon',   pay3: 8,   pay2: 0 },
+    { id: 'orange',   emoji: '🍊', name: 'Orange',  pay3: 10,  pay2: 0 },
+    { id: 'plum',     emoji: '🫐', name: 'Plum',    pay3: 15,  pay2: 0 },
+    { id: 'bell',     emoji: '🔔', name: 'Bell',    pay3: 20,  pay2: 0 },
+    { id: 'bar',      emoji: '🅱️', name: 'BAR',     pay3: 30,  pay2: 5 },
+    { id: 'seven',    emoji: '7️⃣', name: 'Seven',   pay3: 50,  pay2: 0 },
+];
+
+// 8 paylines: each is array of [row, col] positions
+const PAYLINES = [
+    { name: 'Top',        cells: [[0,0],[0,1],[0,2]] },
+    { name: 'Center',     cells: [[1,0],[1,1],[1,2]] },
+    { name: 'Bottom',     cells: [[2,0],[2,1],[2,2]] },
+    { name: 'Left',       cells: [[0,0],[1,0],[2,0]] },
+    { name: 'Middle',     cells: [[0,1],[1,1],[2,1]] },
+    { name: 'Right',      cells: [[0,2],[1,2],[2,2]] },
+    { name: 'Diag ↘',     cells: [[0,0],[1,1],[2,2]] },
+    { name: 'Diag ↙',     cells: [[0,2],[1,1],[2,0]] },
+];
+
+// Current reel state (row-col grid: grid[row][col])
+let grid = [
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0]
+];
+
+// ==================== DOM REFS ====================
+const $ = id => document.getElementById(id);
+const reelCells = document.querySelectorAll('.reel-cell');
+const btnSpin = $('btnSpin');
+const btnGamble = $('btnGamble');
+const btnNudge = $('btnNudge');
+const winFlash = $('winFlash');
+const msgBar = $('msgBar');
+const paylineInfo = $('paylineInfo');
+const gambleOverlay = $('gambleOverlay');
+
+// ==================== INIT ====================
+function init() {
+    // Get userId from URL
+    const params = new URLSearchParams(window.location.search);
+    const userId = params.get('userId');
+    if (userId) {
+        currentUser = { userId: parseInt(userId) };
+        loadBalance();
+    }
+
+    randomizeGrid();
+    renderGrid();
+    updateDisplay();
+
+    // Bet buttons
+    $('btnBetDown').onclick = () => changeStake(-1);
+    $('btnBet1').onclick = () => setStake(1);
+    $('btnBet2').onclick = () => setStake(2);
+    $('btnBet5').onclick = () => setStake(5);
+    $('btnBetMax').onclick = () => setStake(10);
+    btnSpin.onclick = spin;
+    btnGamble.onclick = startGamble;
+    btnNudge.onclick = doNudge;
+
+    // Hold buttons
+    $('hold1').onclick = () => toggleHold(0);
+    $('hold2').onclick = () => toggleHold(1);
+    $('hold3').onclick = () => toggleHold(2);
+
+    updateDisplay();
+}
+
+function randomizeGrid() {
+    for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+            grid[row][col] = Math.floor(Math.random() * SYMBOLS.length);
+        }
+    }
+}
+
+function renderGrid() {
+    reelCells.forEach(cell => {
+        const row = parseInt(cell.dataset.row);
+        const col = parseInt(cell.dataset.col);
+        cell.textContent = SYMBOLS[grid[row][col]].emoji;
+    });
+}
+
+function updateDisplay() {
+    $('credits').textContent = '$' + credits.toFixed(2);
+    $('stakeDisplay').textContent = stake.toFixed(2);
+    const totalBet = stake * 8;
+    $('betDisplay').textContent = '8';
+    btnSpin.disabled = isSpinning || credits < totalBet;
+    btnGamble.disabled = lastWin <= 0 || isSpinning;
+
+    // Update bet button active states
+    document.querySelectorAll('.btn-bet').forEach(b => b.classList.remove('active'));
+    if (stake === 1) $('btnBet1').classList.add('active');
+    else if (stake === 2) $('btnBet2').classList.add('active');
+    else if (stake === 5) $('btnBet5').classList.add('active');
+    else if (stake >= 10) $('btnBetMax').classList.add('active');
+}
+
+function setStake(v) {
+    if (isSpinning) return;
+    stake = Math.max(1, Math.min(v, 100));
+    updateDisplay();
+}
+
+function changeStake(delta) {
+    setStake(stake + delta);
+}
+
+function toggleHold(idx) {
+    if (isSpinning) return;
+    holdReels[idx] = !holdReels[idx];
+    const btn = document.getElementById('hold' + (idx + 1));
+    if (holdReels[idx]) {
+        btn.classList.add('held');
+    } else {
+        btn.classList.remove('held');
+    }
+}
+
+// ==================== SPIN ====================
+async function spin() {
+    if (isSpinning) return;
+    const totalBet = stake * 8;
+    if (credits < totalBet) {
+        msgBar.textContent = 'Not enough credits!';
+        return;
+    }
+
+    isSpinning = true;
+    credits -= totalBet;
+    lastWin = 0;
+    winFlash.textContent = '';
+    msgBar.textContent = 'Spinning...';
+    clearHighlights();
+    updateDisplay();
+
+    // Reset non-held positions
+    btnNudge.disabled = true;
+    $('hold1').disabled = true;
+    $('hold2').disabled = true;
+    $('hold3').disabled = true;
+
+    // Call placeBet API if logged in
+    let betId = null;
+    if (currentUser) {
+        try {
+            const res = await fetch(`${API_BASE}/placeBet`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUser.userId, gameId: 2, amount: totalBet })
+            });
+            const data = await res.json();
+            if (data.success) betId = data.betId;
+        } catch (e) { console.error('Bet API error:', e); }
+    }
+
+    // Spin animation
+    await animateSpin();
+
+    // Generate result (non-held columns get new random values)
+    for (let col = 0; col < 3; col++) {
+        if (!holdReels[col]) {
+            for (let row = 0; row < 3; row++) {
+                grid[row][col] = Math.floor(Math.random() * SYMBOLS.length);
+            }
+        }
+    }
+
+    renderGrid();
+
+    // Evaluate wins
+    const result = evaluateWins();
+    lastWin = result.totalWin;
+
+    if (lastWin > 0) {
+        credits += lastWin;
+        winFlash.textContent = `🎉 WON $${lastWin.toFixed(2)}!`;
+        msgBar.textContent = `Win on ${result.winningLines.length} line(s)!`;
+        highlightWins(result.winningLines);
+
+        // Process win via API
+        if (currentUser && betId) {
+            try {
+                await fetch(`${API_BASE}/processWin`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ betId, winAmount: lastWin })
+                });
+            } catch (e) { console.error('Win API error:', e); }
+        }
+
+        // Enable gamble + hold features
+        btnGamble.disabled = false;
+        $('hold1').disabled = false;
+        $('hold2').disabled = false;
+        $('hold3').disabled = false;
+        btnNudge.disabled = false;
+        nudgeCount = 3; // 3 nudges after a win
+    } else {
+        msgBar.textContent = 'No win. Spin again!';
+        // Reset holds on loss
+        holdReels = [false, false, false];
+        $('hold1').classList.remove('held');
+        $('hold2').classList.remove('held');
+        $('hold3').classList.remove('held');
+    }
+
+    updateDisplay();
+    isSpinning = false;
+}
+
+async function animateSpin() {
+    return new Promise(resolve => {
+        const duration = 800;
+        const interval = 60;
+        const steps = duration / interval;
+        let step = 0;
+
+        const timer = setInterval(() => {
+            reelCells.forEach(cell => {
+                const col = parseInt(cell.dataset.col);
+                if (!holdReels[col]) {
+                    const rnd = Math.floor(Math.random() * SYMBOLS.length);
+                    cell.textContent = SYMBOLS[rnd].emoji;
+                }
+            });
+            step++;
+            if (step >= steps) {
+                clearInterval(timer);
+                resolve();
+            }
+        }, interval);
+    });
+}
+
+// ==================== PAYLINE EVALUATION ====================
+function evaluateWins() {
+    let totalWin = 0;
+    const winningLines = [];
+
+    PAYLINES.forEach((line, idx) => {
+        const [r0, c0] = line.cells[0];
+        const [r1, c1] = line.cells[1];
+        const [r2, c2] = line.cells[2];
+
+        const s0 = grid[r0][c0];
+        const s1 = grid[r1][c1];
+        const s2 = grid[r2][c2];
+
+        // 3 of a kind
+        if (s0 === s1 && s1 === s2) {
+            const win = SYMBOLS[s0].pay3 * stake;
+            totalWin += win;
+            winningLines.push({ lineIdx: idx, cells: line.cells, win });
+        }
+        // 2 cherries (first two match cherry)
+        else if (s0 === s1 && SYMBOLS[s0].pay2 > 0) {
+            const win = SYMBOLS[s0].pay2 * stake;
+            totalWin += win;
+            winningLines.push({ lineIdx: idx, cells: [line.cells[0], line.cells[1]], win });
+        }
+    });
+
+    return { totalWin, winningLines };
+}
+
+function highlightWins(winningLines) {
+    clearHighlights();
+    winningLines.forEach(wl => {
+        wl.cells.forEach(([r, c]) => {
+            const cell = document.querySelector(`.reel-cell[data-row="${r}"][data-col="${c}"]`);
+            if (cell) cell.classList.add('win-highlight');
+        });
+    });
+}
+
+function clearHighlights() {
+    reelCells.forEach(c => c.classList.remove('win-highlight'));
+}
+
+// ==================== NUDGE ====================
+function doNudge() {
+    if (isSpinning || nudgeCount <= 0) return;
+
+    // Nudge shifts one reel down by 1 (wraps around)
+    // Cherry Master typically nudges the reel that gives the best result
+    // For simplicity, nudge the first non-held reel
+    for (let col = 0; col < 3; col++) {
+        if (!holdReels[col]) {
+            const temp = grid[2][col];
+            for (let row = 2; row > 0; row--) {
+                grid[row][col] = grid[row - 1][col];
+            }
+            grid[0][col] = temp;
+            break;
+        }
+    }
+
+    nudgeCount--;
+    renderGrid();
+    msgBar.textContent = `Nudge! ${nudgeCount} remaining`;
+
+    // Re-evaluate
+    const result = evaluateWins();
+    if (result.totalWin > 0) {
+        credits += result.totalWin;
+        lastWin += result.totalWin;
+        winFlash.textContent = `🎉 NUDGE WIN $${result.totalWin.toFixed(2)}!`;
+        highlightWins(result.winningLines);
+    }
+
+    if (nudgeCount <= 0) btnNudge.disabled = true;
+    updateDisplay();
+}
+
+// ==================== GAMBLE (Double or Nothing) ====================
+function startGamble() {
+    if (lastWin <= 0) return;
+    gambleAmount = lastWin;
+    $('gambleAmount').textContent = '$' + gambleAmount.toFixed(2);
+    gambleOverlay.classList.add('active');
+}
+
+function doGamble(choice) {
+    const isRed = Math.random() < 0.5;
+    const result = isRed ? 'red' : 'black';
+
+    if (choice === result) {
+        gambleAmount *= 2;
+        $('gambleAmount').textContent = '$' + gambleAmount.toFixed(2);
+        winFlash.textContent = '🎲 DOUBLED! Go again?';
+    } else {
+        gambleAmount = 0;
+        $('gambleAmount').textContent = '$0.00';
+        winFlash.textContent = '😞 Lost the gamble!';
+        gambleOverlay.classList.remove('active');
+        lastWin = 0;
+        updateDisplay();
+    }
+}
+
+function collectGamble() {
+    if (gambleAmount > 0) {
+        credits += gambleAmount;
+        winFlash.textContent = `💰 Collected $${gambleAmount.toFixed(2)}!`;
+    }
+    gambleAmount = 0;
+    lastWin = 0;
+    gambleOverlay.classList.remove('active');
+    updateDisplay();
+}
+
+// ==================== BALANCE ====================
+async function loadBalance() {
+    if (!currentUser) return;
+    try {
+        const res = await fetch(`${API_BASE}/balance/${currentUser.userId}`);
+        const data = await res.json();
+        const bal = data.Balance !== undefined ? data.Balance : data.balance;
+        credits = parseFloat(bal || 100);
+        updateDisplay();
+    } catch (e) {
+        console.error('Balance load error:', e);
+    }
+}
+
+// ==================== START ====================
+init();
+</script>
+</body>
+</html>
